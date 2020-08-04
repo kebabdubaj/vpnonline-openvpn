@@ -38,13 +38,13 @@ DEFINITION_EXTENSIONS = {'.ovpn'}
 DEFINITIONS_DIRECTORY_NAME = 'definitions'
 DEFINITIONS_DIRECTORY_PATH = os.path.join(CONFIGURATION_DIRECTORY_PATH, DEFINITIONS_DIRECTORY_NAME)
 
+CREDENTIALS_FILE_NAME = 'credentials.txt'
+CREDENTIALS_FILE_PATH = os.path.join(CONFIGURATION_DIRECTORY_PATH, CREDENTIALS_FILE_NAME)
+
 # https://github.com/kylemanna/docker-openvpn/issues/330#issuecomment-346697599
 BROKEN_DEFINITION_OPTIONS = [
     'block-outside-dns'
 ]
-
-CREDENTIALS_FILE_NAME = 'credentials.txt'
-CREDENTIALS_FILE_PATH = os.path.join(CONFIGURATION_DIRECTORY_PATH, CREDENTIALS_FILE_NAME)
 
 
 def list_files(directory_path, extensions):
@@ -54,14 +54,6 @@ def list_files(directory_path, extensions):
 
             if file_extension in extensions:
                 yield root_path, file_path
-
-def clear_directory(directory_path):
-    for path in os.listdir(directory_path):
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-
-        if os.path.isfile(path):
-            os.remove(path)
 
 def or_pattern(expressions):
     return '|'.join(map(str.lower, expressions))
@@ -171,7 +163,7 @@ if __name__ == '__main__':
     group.add_argument('--search', nargs='+', help='print enumerated list of definitions containing all provided keywords')
     group.add_argument('--connect', type=int, help='establish connection described by nth-definition')
 
-    parser.add_argument('--detach', action='store_true', help='don\'t capture output nor wait for connection subprocess to finish')
+    parser.add_argument('--detach', action='store_true', help='don\'t capture output, nor wait for connection subprocess to finish')
 
     args = parser.parse_args()
 
@@ -182,7 +174,7 @@ if __name__ == '__main__':
         print('%s has to be run with sudo' % __file__); exit()
     
     if args.reset_definitions:
-        clear_directory(DEFINITIONS_DIRECTORY_PATH); exit()
+        shutil.rmtree(DEFINITIONS_DIRECTORY_PATH); exit()
 
     if args.reset_credentials:
         os.remove(CREDENTIALS_FILE_PATH); exit()   
@@ -193,16 +185,16 @@ if __name__ == '__main__':
     if not os.path.exists(CONFIGURATION_DIRECTORY_PATH):
         os.mkdir(CONFIGURATION_DIRECTORY_PATH)
     
-    if not os.path.exists(DEFINITIONS_DIRECTORY_PATH):
-        os.mkdir(DEFINITIONS_DIRECTORY_PATH)
-        prepare_definitions()
-
     if not os.path.exists(CREDENTIALS_FILE_PATH):
         user_name = input('user-name: ')
         user_pass = input('user-pass: ')
 
         write_credentials(CREDENTIALS_FILE_PATH, user_name, user_pass)
-    
+
+    if not os.path.exists(DEFINITIONS_DIRECTORY_PATH):
+        os.mkdir(DEFINITIONS_DIRECTORY_PATH)
+        prepare_definitions()
+
     indexed_definitions = index_definitions(DEFINITIONS_DIRECTORY_PATH, DEFINITION_EXTENSIONS)
 
     if args.list:
